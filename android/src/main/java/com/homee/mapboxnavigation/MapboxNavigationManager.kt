@@ -70,4 +70,10 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
     fun setShouldSimulateRoute(view: MapboxNavigationView, shouldSimulateRoute: Boolean) {
         view.setShouldSimulateRoute(shouldSimulateRoute)
     }
+
+    @ReactProp(name = "routes")
+    fun setRoutes(view: MapboxNavigationView, routes: String) {
+        System.out.println(routes)
+        view.setRoutes(List<DirectionsRoute>(DirectionsRoute.fromJson(routes)))
+    }
 }

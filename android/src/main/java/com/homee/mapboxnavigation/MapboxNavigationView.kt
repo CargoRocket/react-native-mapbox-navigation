@@ -28,6 +28,7 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
     private var origin: Point? = null
     private var destination: Point? = null
     private var shouldSimulateRoute = false
+    private var routes: List<DirectionsRoute> = null
     private lateinit var navigationMapboxMap: NavigationMapboxMap
     private lateinit var mapboxNavigation: MapboxNavigation
 
@@ -90,14 +91,19 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                     .isFromNavigationUi(true)
                     .build()
             this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-            this.mapboxNavigation.requestRoutes(RouteOptions.builder()
-                    .applyDefaultParams()
-                    .accessToken(accessToken)
-                    .coordinates(mutableListOf(origin, destination))
-                    .profile(RouteUrl.PROFILE_DRIVING)
-                    .steps(true)
-                    .voiceInstructions(true)
-                    .build(), routesReqCallback)
+            if (this.routes) {
+                this.routesReqCallback.onRoutesReady()
+            } else {
+                this.routesReqCallback.onRoutesRequestFailure()
+            }
+            // this.mapboxNavigation.requestRoutes(RouteOptions.builder()
+            //         .applyDefaultParams()
+            //         .accessToken(accessToken)
+            //         .coordinates(mutableListOf(origin, destination))
+            //         .profile(RouteUrl.PROFILE_DRIVING)
+            //         .steps(true)
+            //         .voiceInstructions(true)
+            //         .build(), routesReqCallback)
         } catch (ex: Exception) {
             sendErrorToReact(ex.toString())
         }
@@ -207,6 +213,10 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
     fun setDestination(destination: Point?) {
         this.destination = destination
+    }
+
+    fun setRoutes(routes: List<DirectionsRoute>?) {
+        this.routes = routes
     }
 
     fun setShouldSimulateRoute(shouldSimulateRoute: Boolean) {

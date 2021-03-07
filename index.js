@@ -10,6 +10,7 @@ MapboxNavigation.propTypes = {
   origin: PropTypes.array.isRequired,
   destination: PropTypes.array.isRequired,
   shouldSimulateRoute: PropTypes.bool,
+  routes: PropTypes.string,
   onLocationChange: PropTypes.func,
   onRouteProgressChange: PropTypes.func,
   onError: PropTypes.func,
