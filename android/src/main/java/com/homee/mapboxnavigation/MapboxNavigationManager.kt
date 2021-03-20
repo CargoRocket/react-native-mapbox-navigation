@@ -2,14 +2,18 @@ package com.homee.mapboxnavigation
 
 import android.content.pm.PackageManager
 import com.facebook.react.bridge.ReactApplicationContext
+import com.mapbox.api.directions.v5.models.DirectionsRoute
+import com.mapbox.api.directions.v5.models.DirectionsResponse
 import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
-import javax.annotation.Nonnull
+import javax.annotation.Nonnull 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper;
 
 class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : SimpleViewManager<MapboxNavigationView>() {
     init {
@@ -72,8 +76,12 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
     }
 
     @ReactProp(name = "routes")
-    fun setRoutes(view: MapboxNavigationView, routes: String) {
-        System.out.println(routes)
-        view.setRoutes(List<DirectionsRoute>(DirectionsRoute.fromJson(routes)))
+    fun setRoutes(view: MapboxNavigationView, routes: String?) {
+        if (routes != null) {
+            var routesFixed:String = routes
+            var route: DirectionsRoute =  DirectionsRoute.fromJson(routesFixed)
+            var directions:List<DirectionsRoute> = listOf(route)
+            view.setRoutes(directions)
+        }
     }
 }
