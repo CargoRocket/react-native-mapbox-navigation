@@ -7,22 +7,28 @@ import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.mapbox.api.directions.v5.models.DirectionsRoute
 // import com.mapbox.services.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
+// import com.mapbox.api.directions.v5.offroute.OffRouteListener;
+
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.camera.CameraPosition
 import com.mapbox.navigation.base.internal.extensions.applyDefaultParams
 import com.mapbox.navigation.base.internal.route.RouteUrl
 import com.mapbox.navigation.base.trip.model.RouteProgress
-import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.directions.session.RoutesRequestCallback
 import com.mapbox.navigation.core.trip.session.LocationObserver
+import com.mapbox.navigation.core.trip.session.OffRouteObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
 import com.mapbox.navigation.ui.NavigationView
 import com.mapbox.navigation.ui.NavigationViewOptions
 import com.mapbox.navigation.ui.OnNavigationReadyCallback
 import com.mapbox.navigation.ui.listeners.NavigationListener
 import com.mapbox.navigation.ui.map.NavigationMapboxMap
+// import com.mapbox.services.android.navigation.v5.offroute.OffRouteListener
+// import com.mapbox.services.android.navigation.v5.navigation.MapboxNavigation
+// ToDo Whats the difference between those two?
+import com.mapbox.navigation.core.MapboxNavigation
 
 
 class MapboxNavigationView(private val context: ThemedReactContext) : NavigationView(context.baseContext), NavigationListener, OnNavigationReadyCallback {
@@ -91,7 +97,10 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                     .defaultNavigationOptionsBuilder(context, accessToken)
                     .isFromNavigationUi(true)
                     .build()
+                // this.mapboxNavigation.addOffRouteListener(this);
                 this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
+                this.mapboxNavigation.setRerouteController(null)
+                this.mapboxNavigation.registerOffRouteObserver(offRouteObserver)
                 startNav(routes[0])
             } else {
                 throw Exception("Route not accepted")
@@ -115,6 +124,14 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
         optionsBuilder.waynameChipEnabled(true)
         val navigation = optionsBuilder.build()
         this.startNavigation(navigation)
+    }
+
+    private val offRouteObserver = object : OffRouteObserver {
+        override fun onOffRouteStateChanged(offRoute: Boolean) {
+            val event = Arguments.createMap()
+            event.putBoolean("offRoute", offRoute)
+            context.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "onUserOffRoute", event)
+        }
     }
 
     private val locationObserver = object : LocationObserver {
