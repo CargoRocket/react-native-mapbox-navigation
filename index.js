@@ -1,9 +1,19 @@
 import PropTypes from 'prop-types';
 import * as React from 'react';
-import { requireNativeComponent, StyleSheet, View } from 'react-native';
+import { requireNativeComponent, StyleSheet, UIManager, findNodeHandle } from 'react-native';
 
-const MapboxNavigation = (props) => {
-  return <RNMapboxNavigation style={styles.flex} {...props} />;
+class MapboxNavigation extends React.Component {
+  updateRoute(payload) {
+    UIManager.dispatchViewManagerCommand(
+      findNodeHandle(this.refs.navigationView),
+      1, // UIManager.RNMapboxNavigation.Commands.updateRoute,
+      [payload]
+    );
+  }
+
+  render() {
+    return <RNMapboxNavigation ref="navigationView" style={styles.flex} {...this.props} />;
+  }
 };
 
 MapboxNavigation.propTypes = {
@@ -22,6 +32,7 @@ const RNMapboxNavigation = requireNativeComponent(
   'MapboxNavigation',
   MapboxNavigation
 );
+
 
 const styles = StyleSheet.create({
   flex: {

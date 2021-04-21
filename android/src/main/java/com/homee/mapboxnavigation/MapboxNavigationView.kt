@@ -5,18 +5,11 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.mapbox.api.directions.v5.models.DirectionsRoute
-// import com.mapbox.services.api.directions.v5.models.DirectionsRoute
-import com.mapbox.api.directions.v5.models.RouteOptions
-// import com.mapbox.api.directions.v5.offroute.OffRouteListener;
 
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.camera.CameraPosition
-import com.mapbox.navigation.base.internal.extensions.applyDefaultParams
-import com.mapbox.navigation.base.internal.route.RouteUrl
 import com.mapbox.navigation.base.trip.model.RouteProgress
-import com.mapbox.navigation.core.MapboxNavigationProvider
-import com.mapbox.navigation.core.directions.session.RoutesRequestCallback
 import com.mapbox.navigation.core.trip.session.LocationObserver
 import com.mapbox.navigation.core.trip.session.OffRouteObserver
 import com.mapbox.navigation.core.trip.session.RouteProgressObserver
@@ -24,9 +17,6 @@ import com.mapbox.navigation.ui.NavigationView
 import com.mapbox.navigation.ui.NavigationViewOptions
 import com.mapbox.navigation.ui.OnNavigationReadyCallback
 import com.mapbox.navigation.ui.listeners.NavigationListener
-import com.mapbox.navigation.ui.map.NavigationMapboxMap
-// import com.mapbox.services.android.navigation.v5.offroute.OffRouteListener
-// import com.mapbox.services.android.navigation.v5.navigation.MapboxNavigation
 // ToDo Whats the difference between those two?
 import com.mapbox.navigation.core.MapboxNavigation
 
@@ -36,8 +26,9 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
     private var destination: Point? = null
     private var shouldSimulateRoute = false
     private var routes: List<DirectionsRoute>? = null
-    private lateinit var navigationMapboxMap: NavigationMapboxMap
-    private lateinit var mapboxNavigation: MapboxNavigation
+    private var mapboxNavigation: MapboxNavigation? = null
+
+    private var lastLocation: Location? = null
 
     init {
         onCreate(null)
@@ -79,28 +70,8 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                 return
             }
 
-            if (::navigationMapboxMap.isInitialized) {
-                return
-            }
-
-            if (this.retrieveNavigationMapboxMap() == null) {
-                sendErrorToReact("retrieveNavigationMapboxMap() is null")
-                return
-            }
-
-            this.navigationMapboxMap = this.retrieveNavigationMapboxMap()!!
-
-            // fetch the route
             val routes = this.routes
-            if ( routes != null) {
-                val navigationOptions = MapboxNavigation
-                    .defaultNavigationOptionsBuilder(context, accessToken)
-                    .isFromNavigationUi(true)
-                    .build()
-                // this.mapboxNavigation.addOffRouteListener(this);
-                this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-                this.mapboxNavigation.setRerouteController(null)
-                this.mapboxNavigation.registerOffRouteObserver(offRouteObserver)
+            if (routes != null) {
                 startNav(routes[0])
             } else {
                 throw Exception("Route not accepted")
@@ -122,14 +93,24 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
         optionsBuilder.directionsRoute(route)
         optionsBuilder.shouldSimulateRoute(this.shouldSimulateRoute)
         optionsBuilder.waynameChipEnabled(true)
-        val navigation = optionsBuilder.build()
+        val navigation = optionsBuilder.build();
         this.startNavigation(navigation)
+    }
+
+    public fun updateRoute(routes: List<DirectionsRoute>?) {
+        if (routes != null) {
+            this.retrieveMapboxNavigation()?.setRoutes(routes);
+        }
     }
 
     private val offRouteObserver = object : OffRouteObserver {
         override fun onOffRouteStateChanged(offRoute: Boolean) {
             val event = Arguments.createMap()
             event.putBoolean("offRoute", offRoute)
+            if (lastLocation != null) {
+                event.putDouble("longitude", lastLocation!!.longitude)
+                event.putDouble("latitude", lastLocation!!.latitude)
+            }
             context.getJSModule(RCTEventEmitter::class.java).receiveEvent(id, "onUserOffRoute", event)
         }
     }
@@ -143,6 +124,7 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                 enhancedLocation: Location,
                 keyPoints: List<Location>
         ) {
+            lastLocation = enhancedLocation;
             val event = Arguments.createMap()
             event.putDouble("longitude", enhancedLocation.longitude)
             event.putDouble("latitude", enhancedLocation.latitude)
@@ -170,7 +152,8 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
     }
 
     override fun onNavigationRunning() {
-
+        this.mapboxNavigation = this.retrieveMapboxNavigation()
+        this.mapboxNavigation?.registerOffRouteObserver(offRouteObserver)
     }
 
     override fun onFinalDestinationArrival(enableDetailedFeedbackFlowAfterTbt: Boolean, enableArrivalExperienceFeedback: Boolean) {
@@ -192,13 +175,11 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
     override fun onDestroy() {
         this.stopNavigation()
-        this.mapboxNavigation?.onDestroy()
         super.onDestroy()
     }
 
     override fun onStop() {
         super.onStop()
-        this.mapboxNavigation?.unregisterLocationObserver(locationObserver)
     }
 
     fun setOrigin(origin: Point?) {

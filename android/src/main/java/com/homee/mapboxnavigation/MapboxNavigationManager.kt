@@ -2,20 +2,19 @@ package com.homee.mapboxnavigation
 
 import android.content.pm.PackageManager
 import com.facebook.react.bridge.ReactApplicationContext
-import com.mapbox.api.directions.v5.models.DirectionsRoute
-import com.mapbox.api.directions.v5.models.DirectionsResponse
 import com.facebook.react.bridge.ReadableArray
-import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
-import javax.annotation.Nonnull 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper;
+import javax.annotation.Nonnull
 
 class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : SimpleViewManager<MapboxNavigationView>() {
+    val COMMAND_UPDATE_ROUTE = 1
+
     init {
         mCallerContext.runOnUiQueueThread {
             try {
@@ -42,6 +41,19 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
         super.onDropViewInstance(view)
     }
 
+    override fun getCommandsMap(): Map<String?, Int?>? {
+        return MapBuilder.of(
+                "updateRoute",
+                COMMAND_UPDATE_ROUTE
+        );
+    }
+
+    override fun receiveCommand(view: MapboxNavigationView, commandId: Int, args: ReadableArray?) {
+        when (commandId) {
+            1 -> this.updateRoute(view, args?.getString(0))
+        }
+    }
+
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Map<String, String>>? {
         return MapBuilder.of<String, Map<String, String>>(
                 "onLocationChange", MapBuilder.of("registrationName", "onLocationChange"),
@@ -60,6 +72,15 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
             return
         }
         view.setOrigin(Point.fromLngLat(sources.getDouble(0), sources.getDouble(1)))
+    }
+    
+    fun updateRoute(view: MapboxNavigationView, routes: String?) {
+        if (routes != null) {
+            var routesFixed:String = routes
+            var route: DirectionsRoute =  DirectionsRoute.fromJson(routesFixed)
+            var directions:List<DirectionsRoute> = listOf(route)
+            view.updateRoute(directions)
+        }
     }
 
     @ReactProp(name = "destination")

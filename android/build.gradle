@@ -86,6 +86,21 @@ repositories {
         // Android JSC is installed from npm
         url "$rootDir/../node_modules/jsc-android/dist"
     }
+    
+    maven {
+        url "https://api.mapbox.com/downloads/v2/releases/maven"
+        authentication {
+            basic(BasicAuthentication)
+        }
+        credentials {
+            // Do not change the username below.
+            // This should always be `mapbox` (not your username).
+            username = "mapbox"
+            // Use the secret token you stored in gradle.properties as the password
+            password = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: ""
+        }
+    }
+
     google()
     jcenter()
 }
@@ -97,7 +112,7 @@ dependencies {
     implementation 'com.mapbox.navigation:ui:1.3.0'
     implementation "com.mapbox.mapboxsdk:mapbox-android-navigation:0.42.6"
     implementation "com.mapbox.mapboxsdk:mapbox-android-core:1.3.0"
-    implementation 'com.mapbox.mapboxsdk:mapbox-android-services:2.2.+'
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-services:2.2+'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
